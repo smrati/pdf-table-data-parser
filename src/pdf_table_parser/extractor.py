@@ -28,15 +28,24 @@ def extract_tables(pdf_path: str, pages: str | None = None) -> dict:
             tables = page.extract_tables()
             page_data = {"page_number": i, "tables": []}
             for raw_table in tables:
-                if not raw_table or len(raw_table) < 2:
+                if not raw_table:
                     continue
-                headers = [cell.strip() if cell else "" for cell in raw_table[0]]
-                rows = [
+                cleaned = [
                     [cell.strip() if cell else "" for cell in row]
-                    for row in raw_table[1:]
+                    for row in raw_table
                     if any(cell for cell in row)
                 ]
-                if rows:
+                if not cleaned:
+                    continue
+                if len(cleaned) == 1:
+                    # Single-row table: treat as a key-value row, no header
+                    page_data["tables"].append({
+                        "headers": [],
+                        "rows": cleaned,
+                    })
+                else:
+                    headers = cleaned[0]
+                    rows = cleaned[1:]
                     page_data["tables"].append({"headers": headers, "rows": rows})
             result_pages.append(page_data)
 
